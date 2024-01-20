@@ -86,7 +86,7 @@ bool TwoTasksAdaptor::InitROS() {
 	sub_task1_ = nh_.subscribe(topic_task1_velocity_, 1000, &TwoTasksAdaptor::UpdateTask1, this, ros::TransportHints().reliable().tcpNoDelay());
 	sub_task2_ = nh_.subscribe(topic_task2_velocity_, 1000, &TwoTasksAdaptor::UpdateTask2, this, ros::TransportHints().reliable().tcpNoDelay());
 
-	pub_adapted_velocity_ = nh_.advertise<geometry_msgs::Twist>(topic_adapted_velocity_, 1);
+	pub_adapted_velocity_ = nh_.advertise<geometry_msgs::TwistStamped>(topic_adapted_velocity_, 1);
 	pub_wrench_control_   = nh_.advertise<geometry_msgs::WrenchStamped>(topic_desired_force_, 1);
 
 	dyn_rec_f_ = boost::bind(&TwoTasksAdaptor::DynCallback, this, _1, _2);

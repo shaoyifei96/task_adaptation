@@ -53,7 +53,8 @@ void TaskAdaptor::Run() {
 			time_display = ros::Time::now() + disp_rate_;
 		}
 
-		if (CheckNewData() && 1) {
+		if (CheckNewData() && 1) {//only adapt if new data for each task is received
+			// ROS_INFO_STREAM("Adapting !!!!!!!!!");
 
 			UpdateDesiredVelocity();
 
@@ -96,7 +97,9 @@ bool TaskAdaptor::InitROS() {
 	sub_task3_ = nh_.subscribe(topic_task3_velocity_, 1000, &TaskAdaptor::UpdateTask3, this, ros::TransportHints().reliable().tcpNoDelay());
 	sub_task4_ = nh_.subscribe(topic_task4_velocity_, 1000, &TaskAdaptor::UpdateTask4, this, ros::TransportHints().reliable().tcpNoDelay());
 
-	pub_adapted_velocity_ = nh_.advertise<geometry_msgs::Twist>(topic_adapted_velocity_, 1);
+	sub_task_state_ = nh_.subscribe<geometry_msgs::Pose>("/iiwa/task_states", 1000, &TaskAdaptor::updateRobotState, this, ros::TransportHints().reliable().tcpNoDelay());
+
+	pub_adapted_velocity_ = nh_.advertise<geometry_msgs::TwistStamped>(topic_adapted_velocity_, 1);
 	pub_wrench_control_   = nh_.advertise<geometry_msgs::WrenchStamped>(topic_desired_force_, 1);
 	pub_beliefs_ = nh_.advertise<std_msgs::Float64MultiArray>("beliefs", 1);
 
@@ -252,15 +255,21 @@ void TaskAdaptor::PublishDesiredForce() {
 
 void TaskAdaptor::PublishAdaptedVelocity() {
 
-	// msgAdaptedVelocity_.header.stamp = ros::Time::now();
-	// msgAdaptedVelocity_.twist.linear.x = DesiredVelocity_[0];
-	// msgAdaptedVelocity_.twist.linear.y = DesiredVelocity_[1];
-	// msgAdaptedVelocity_.twist.linear.z = DesiredVelocity_[2];
+	msgAdaptedVelocity_.header.stamp = ros::Time::now();
+	msgAdaptedVelocity_.header.frame_id = "world"; // just for visualization
+	msgAdaptedVelocity_.twist.linear.x = DesiredVelocity_[0];
+	msgAdaptedVelocity_.twist.linear.y = DesiredVelocity_[1];
+	msgAdaptedVelocity_.twist.linear.z = -0.5 *(robot_state_(2) - 0.0);
+	// P controller \dot x = -0.5 (x - x_des)
 
-
-	msgAdaptedVelocity_.linear.x = DesiredVelocity_[0];
-	msgAdaptedVelocity_.linear.y = DesiredVelocity_[1];
-	msgAdaptedVelocity_.linear.z = DesiredVelocity_[2];
+	Eigen::Vector3d w_temp = Eigen::Vector3d(0,0,DesiredVelocity_[2]);
+	Eigen::Vector3d w_temp2 = rot_mat_ * w_temp;
+	msgAdaptedVelocity_.twist.angular.x = w_temp2(0);
+	msgAdaptedVelocity_.twist.angular.y = w_temp2(1);
+	msgAdaptedVelocity_.twist.angular.z = w_temp2(2);
+	// msgAdaptedVelocity_.linear.x = DesiredVelocity_[0];
+	// msgAdaptedVelocity_.linear.y = DesiredVelocity_[1];
+	// msgAdaptedVelocity_.linear.z = DesiredVelocity_[2];
 
 	pub_adapted_velocity_.publish(msgAdaptedVelocity_);
 }
@@ -317,6 +326,12 @@ void TaskAdaptor::UpdateTask4(const geometry_msgs::TwistStamped::ConstPtr& msg)
 	Task4_velocity_[2] = msg->twist.linear.z;
 
 	flag_newdata_[4] = true;
+}
+
+void TaskAdaptor::updateRobotState(const geometry_msgs::Pose::ConstPtr& msg){
+	Eigen::Quaterniond q = Eigen::Quaterniond(msg->orientation.w, msg->orientation.x, msg->orientation.y, msg->orientation.z);
+	rot_mat_ = q.normalized().toRotationMatrix();
+	robot_state_ = Eigen::Vector3d(msg->position.x, msg->position.y, msg->position.z);
 }
 
 

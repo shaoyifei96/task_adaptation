@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 	ros::Subscriber sub_task1 = n.subscribe("TaskAdaptation/task1/DesiredVelocity", 1000, UpdateTask1);
 	ros::Subscriber sub_task2 = n.subscribe("TaskAdaptation/task2/DesiredVelocity", 1000, UpdateTask2);
 	ros::Subscriber sub_task3 = n.subscribe("TaskAdaptation/task3/DesiredVelocity", 1000, UpdateTask3);
-	ros::Subscriber sub_task4 = n.subscribe("TaskAdaptation/task4/DesiredVelocity", 1000, UpdateTask4);
+	// ros::Subscriber sub_task4 = n.subscribe("TaskAdaptation/task4/DesiredVelocity", 1000, UpdateTask4);
 
 
 

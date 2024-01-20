@@ -9,13 +9,13 @@
   <param name="topic_task3_velocity" value="/testUnitary/task3/DesiredVelocity"/>
   <param name="topic_task4_velocity" value="/testUnitary/task4/DesiredVelocity"/>
 
-  <param name="topic_adapted_velocity" value="/task_adaptation/adapted_velocity"/>
+  <param name="topic_adapted_velocity" value="/iiwa/desired_twist"/>
 
   <param name="topic_desired_force" value="/task_adaptation/desired_force"/>
 
 
-  <!-- <node name="adaptation_node" pkg="task_adaptation" type="task_adaptation_node" output="screen"/> -->
-  <node name="adaptation_node" pkg="task_adaptation" type="twoTasks_adaptation_node" output="screen"/>
+  <node name="adaptation_node" pkg="task_adaptation" type="task_adaptation_node" output="screen"/>
+  <!-- <node name="adaptation_node" pkg="task_adaptation" type="twoTasks_adaptation_node" output="screen"/> -->
 
 
 

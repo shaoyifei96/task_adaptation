@@ -25,6 +25,9 @@ private:
 	ros::Subscriber sub_task1_;
 	ros::Subscriber sub_task2_;
 
+	ros::Subscriber sub_task_state_;
+
+
 	ros::Publisher pub_adapted_velocity_;
 	ros::Publisher pub_wrench_control_;
 

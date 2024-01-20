@@ -9,9 +9,12 @@
 #include "geometry_msgs/WrenchStamped.h"
 #include "std_msgs/Float64MultiArray.h"
 
+#include "geometry_msgs/Pose.h"
 
 #include <dynamic_reconfigure/server.h>
 #include <task_adaptation/task_adaptation_paramsConfig.h>
+//include eigen
+#include <Eigen/Dense>
 
 
 class TaskAdaptor {
@@ -28,18 +31,22 @@ private:
 	ros::Subscriber sub_task2_;
 	ros::Subscriber sub_task3_;
 	ros::Subscriber sub_task4_;
+	ros::Subscriber sub_task_state_;
 
 	ros::Publisher pub_adapted_velocity_;
 	ros::Publisher pub_wrench_control_;
 	ros::Publisher pub_beliefs_;
 
 
-	geometry_msgs::Twist  msgAdaptedVelocity_;
+	geometry_msgs::TwistStamped  msgAdaptedVelocity_;
 	geometry_msgs::WrenchStamped msgWrenchControl_;
 
 	//dynamic reconfig settig
 	dynamic_reconfigure::Server<task_adaptation::task_adaptation_paramsConfig> dyn_rec_srv_;
 	dynamic_reconfigure::Server<task_adaptation::task_adaptation_paramsConfig>::CallbackType dyn_rec_f_;
+
+	Eigen::Matrix3d rot_mat_ = Eigen::Matrix3d::Identity();
+	Eigen::Vector3d robot_state_ = Eigen::Vector3d::Zero();
 
 	// topic names
 	std::string topic_real_velocity_;
@@ -121,6 +128,8 @@ private:
 	void UpdateTask2(const geometry_msgs::TwistStamped::ConstPtr& msg);
 	void UpdateTask3(const geometry_msgs::TwistStamped::ConstPtr& msg);
 	void UpdateTask4(const geometry_msgs::TwistStamped::ConstPtr& msg);
+	void updateRobotState(const geometry_msgs::Pose::ConstPtr& msg);
+
 
 
 	void DynCallback(task_adaptation::task_adaptation_paramsConfig& config, uint32_t level);
