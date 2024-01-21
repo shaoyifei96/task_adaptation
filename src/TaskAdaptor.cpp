@@ -271,7 +271,8 @@ void TaskAdaptor::PublishAdaptedVelocity() {
 	// P controller \dot x = -0.5 (x - x_des)
 	double desired_yaw = -atan2(robot_state_(1), robot_state_(0));
 	double desired_yaw_vel = -0.5 * (robot_euler_(1) - desired_yaw);
-	Eigen::Vector3d w_temp = Eigen::Vector3d(desired_yaw_vel,0,human_combined_v[2]);
+	double desired_pitch_vel = -0.5 * (robot_euler_(0) - 1.57);
+	Eigen::Vector3d w_temp = Eigen::Vector3d(desired_yaw_vel, desired_pitch_vel, human_combined_v[2]);
 	Eigen::Vector3d w_temp2 = rot_mat_ * w_temp;
 	msgAdaptedVelocity_.twist.angular.x = w_temp2(0);
 	msgAdaptedVelocity_.twist.angular.y = w_temp2(1);
