@@ -99,6 +99,12 @@ bool TaskAdaptor::InitROS() {
 
 	sub_task_state_ = nh_.subscribe<geometry_msgs::Pose>("/iiwa/task_states", 1000, &TaskAdaptor::updateRobotState, this, ros::TransportHints().reliable().tcpNoDelay());
 
+	sub_human_admittance_velocity_ = nh_.subscribe("/human_admittance/v_a" , 1000, &TaskAdaptor::updateHumanV, this, ros::TransportHints().reliable().tcpNoDelay());
+	sub_human_tank_state_  = nh_.subscribe("/human_admittance/tank_state_percentage" , 1000, &TaskAdaptor::updateHumanTankState, this, ros::TransportHints().reliable().tcpNoDelay());
+	// ros::Subscriber sub_human_tank_state_;
+	// ros::Subscriber sub_human_admittance_velocity_;
+	// /human_admittance/tank_state_percentage(0-1) and /human_admittance/v_a
+
 	pub_adapted_velocity_ = nh_.advertise<geometry_msgs::TwistStamped>(topic_adapted_velocity_, 1);
 	pub_wrench_control_   = nh_.advertise<geometry_msgs::WrenchStamped>(topic_desired_force_, 1);
 	pub_beliefs_ = nh_.advertise<std_msgs::Float64MultiArray>("beliefs", 1);
@@ -254,16 +260,18 @@ void TaskAdaptor::PublishDesiredForce() {
 
 
 void TaskAdaptor::PublishAdaptedVelocity() {
+	Eigen::Vector3d desired_v = Eigen::Vector3d(DesiredVelocity_[0], DesiredVelocity_[1], DesiredVelocity_[2]);
+	Eigen::Vector3d human_combined_v = human_admittance_velocity_ + (1.0 - human_state_0_1_) * desired_v;
 
 	msgAdaptedVelocity_.header.stamp = ros::Time::now();
 	msgAdaptedVelocity_.header.frame_id = "world"; // just for visualization
-	msgAdaptedVelocity_.twist.linear.x = DesiredVelocity_[0];
-	msgAdaptedVelocity_.twist.linear.y = DesiredVelocity_[1];
+	msgAdaptedVelocity_.twist.linear.x = human_combined_v[0];
+	msgAdaptedVelocity_.twist.linear.y = human_combined_v[1];
 	msgAdaptedVelocity_.twist.linear.z = -0.5 *(robot_state_(2) - 0.0);
 	// P controller \dot x = -0.5 (x - x_des)
 	double desired_yaw = -atan2(robot_state_(1), robot_state_(0));
 	double desired_yaw_vel = -0.5 * (robot_euler_(1) - desired_yaw);
-	Eigen::Vector3d w_temp = Eigen::Vector3d(desired_yaw_vel,0,DesiredVelocity_[2]);
+	Eigen::Vector3d w_temp = Eigen::Vector3d(desired_yaw_vel,0,human_combined_v[2]);
 	Eigen::Vector3d w_temp2 = rot_mat_ * w_temp;
 	msgAdaptedVelocity_.twist.angular.x = w_temp2(0);
 	msgAdaptedVelocity_.twist.angular.y = w_temp2(1);
@@ -271,6 +279,8 @@ void TaskAdaptor::PublishAdaptedVelocity() {
 	// msgAdaptedVelocity_.linear.x = DesiredVelocity_[0];
 	// msgAdaptedVelocity_.linear.y = DesiredVelocity_[1];
 	// msgAdaptedVelocity_.linear.z = DesiredVelocity_[2];
+	
+	
 
 	pub_adapted_velocity_.publish(msgAdaptedVelocity_);
 }
@@ -334,6 +344,16 @@ void TaskAdaptor::updateRobotState(const geometry_msgs::Pose::ConstPtr& msg){
 	robot_euler_ = q.toRotationMatrix().eulerAngles(1, 0, 2); // pitch yaw roll
 	rot_mat_ = q.normalized().toRotationMatrix();
 	robot_state_ = Eigen::Vector3d(msg->position.x, msg->position.y, msg->position.z);
+}
+
+void TaskAdaptor::updateHumanV(const geometry_msgs::Twist::ConstPtr& msg){
+	human_admittance_velocity_(0) = msg->linear.x;
+	human_admittance_velocity_(1) = msg->linear.y;
+	human_admittance_velocity_(2) = msg->linear.z;
+}
+
+void TaskAdaptor::updateHumanTankState(const std_msgs::Float32::ConstPtr& msg){
+	human_state_0_1_ = msg->data;
 }
 
 

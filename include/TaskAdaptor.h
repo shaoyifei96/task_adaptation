@@ -8,6 +8,7 @@
 #include "geometry_msgs/TwistStamped.h"
 #include "geometry_msgs/WrenchStamped.h"
 #include "std_msgs/Float64MultiArray.h"
+#include "std_msgs/Float32.h"
 
 #include "geometry_msgs/Pose.h"
 
@@ -33,6 +34,10 @@ private:
 	ros::Subscriber sub_task4_;
 	ros::Subscriber sub_task_state_;
 
+	//for human detection
+	ros::Subscriber sub_human_tank_state_;
+	ros::Subscriber sub_human_admittance_velocity_;
+
 	ros::Publisher pub_adapted_velocity_;
 	ros::Publisher pub_wrench_control_;
 	ros::Publisher pub_beliefs_;
@@ -47,7 +52,10 @@ private:
 
 	Eigen::Matrix3d rot_mat_ = Eigen::Matrix3d::Identity();
 	Eigen::Vector3d robot_state_ = Eigen::Vector3d::Zero();
-	Eigen::Vector3d robot_euler_ = Eigen::Vector3d::Zero();
+	Eigen::Vector3d robot_euler_ = Eigen::Vector3d::Zero();	
+	double human_state_0_1_;
+	Eigen::Vector3d human_admittance_velocity_ = Eigen::Vector3d::Zero();
+	
 
 	// topic names
 	std::string topic_real_velocity_;
@@ -82,6 +90,7 @@ private:
 
 	// control gain for a simple velocity controller
 	double D_gain_, D_gain_hack_;
+
 
 
 public:
@@ -130,7 +139,8 @@ private:
 	void UpdateTask3(const geometry_msgs::TwistStamped::ConstPtr& msg);
 	void UpdateTask4(const geometry_msgs::TwistStamped::ConstPtr& msg);
 	void updateRobotState(const geometry_msgs::Pose::ConstPtr& msg);
-
+	void updateHumanV(const geometry_msgs::Twist::ConstPtr& msg);
+	void updateHumanTankState(const std_msgs::Float32::ConstPtr& msg);
 
 
 	void DynCallback(task_adaptation::task_adaptation_paramsConfig& config, uint32_t level);
