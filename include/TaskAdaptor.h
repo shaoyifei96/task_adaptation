@@ -47,6 +47,7 @@ private:
 
 	Eigen::Matrix3d rot_mat_ = Eigen::Matrix3d::Identity();
 	Eigen::Vector3d robot_state_ = Eigen::Vector3d::Zero();
+	Eigen::Vector3d robot_euler_ = Eigen::Vector3d::Zero();
 
 	// topic names
 	std::string topic_real_velocity_;

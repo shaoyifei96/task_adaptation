@@ -12,7 +12,7 @@ Eigen::Vector3d getTaskVelocity(const Eigen::Vector3d& current_position, const E
 
 	Eigen::Vector3d linear_velocity;
 	//multiply by element wise
-	linear_velocity = dynamic_mat_A.cwiseProduct(attractor_position - current_position);
+	linear_velocity = dynamic_mat_A.cwiseProduct(current_position - attractor_position);
 
 	return 	linear_velocity;
 }
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
 	Eigen::Vector3d task1_attractor = Eigen::Vector3d(0.6, 0, 0);
 	Eigen::Vector3d task2_attractor = Eigen::Vector3d(0.4,0.3,0);
-	Eigen::Vector3d task3_attractor = Eigen::Vector3d(0.4,0.3,1.0); //1.0 rad = 57.2958 deg
+	Eigen::Vector3d task3_attractor = Eigen::Vector3d(0.4,0.3,-1.5); //1.0 rad = 57.2958 deg
 
 	// variables
 	geometry_msgs::TwistStamped Task1_velocity;

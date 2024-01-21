@@ -332,12 +332,16 @@ void RawAdaptation()
 
 	UpdateBeliefsRaw[4] -= ComputeOutterSimilarity(Task4_velocity);
 	UpdateBeliefsRaw[4] -= 2 * ComputeInnerSimilarity(Beliefs[4], Task4_velocity);
+	UpdateBeliefsRaw[4] -= 100.0;
+	
 
 
 
 
 
 	UpdateBeliefsRaw[0] -= ComputeOutterSimilarity(Task0_velocity);
+	UpdateBeliefsRaw[0] -= 100.0;
+
 //	UpdateBeliefsRaw[0] += 2 * Beliefs[0] * .03;
 
 //	UpdateBeliefsRaw[0] -= 0.25 * ComputeInnerSimilarity(Beliefs[1],Task1_velocity);

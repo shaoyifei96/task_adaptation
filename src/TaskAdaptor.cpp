@@ -1,6 +1,6 @@
 #include "TaskAdaptor.h"
 
-
+#include <math.h>       /* atan */
 TaskAdaptor::TaskAdaptor(ros::NodeHandle &n,
                          double frequency,
                          std::string topic_real_velocity,
@@ -133,7 +133,7 @@ void TaskAdaptor::InitClassVariables() {
 
 	Beliefs_.resize(5);
 	std::fill(Beliefs_.begin(), Beliefs_.end(), 0);
-	Beliefs_[0] = 1;
+	Beliefs_[2] = 1;
 
 	flag_newdata_.resize(5);
 	std::fill(flag_newdata_.begin(), flag_newdata_.end(), false);
@@ -261,8 +261,9 @@ void TaskAdaptor::PublishAdaptedVelocity() {
 	msgAdaptedVelocity_.twist.linear.y = DesiredVelocity_[1];
 	msgAdaptedVelocity_.twist.linear.z = -0.5 *(robot_state_(2) - 0.0);
 	// P controller \dot x = -0.5 (x - x_des)
-
-	Eigen::Vector3d w_temp = Eigen::Vector3d(0,0,DesiredVelocity_[2]);
+	double desired_yaw = -atan2(robot_state_(1), robot_state_(0));
+	double desired_yaw_vel = -0.5 * (robot_euler_(1) - desired_yaw);
+	Eigen::Vector3d w_temp = Eigen::Vector3d(desired_yaw_vel,0,DesiredVelocity_[2]);
 	Eigen::Vector3d w_temp2 = rot_mat_ * w_temp;
 	msgAdaptedVelocity_.twist.angular.x = w_temp2(0);
 	msgAdaptedVelocity_.twist.angular.y = w_temp2(1);
@@ -330,6 +331,7 @@ void TaskAdaptor::UpdateTask4(const geometry_msgs::TwistStamped::ConstPtr& msg)
 
 void TaskAdaptor::updateRobotState(const geometry_msgs::Pose::ConstPtr& msg){
 	Eigen::Quaterniond q = Eigen::Quaterniond(msg->orientation.w, msg->orientation.x, msg->orientation.y, msg->orientation.z);
+	robot_euler_ = q.toRotationMatrix().eulerAngles(1, 0, 2); // pitch yaw roll
 	rot_mat_ = q.normalized().toRotationMatrix();
 	robot_state_ = Eigen::Vector3d(msg->position.x, msg->position.y, msg->position.z);
 }
@@ -414,9 +416,12 @@ void TaskAdaptor::RawAdaptation()
 	UpdateBeliefsRaw_[0] -= ComputeOutterSimilarity(Task0_velocity_);
 	UpdateBeliefsRaw_[0] -= NullinnterSimilarity;
 
-	if(Beliefs_[0] < 0.2){
+	// if(Beliefs_[0] < 0.2){
 		UpdateBeliefsRaw_[0] -= 1000;
-	}
+		UpdateBeliefsRaw_[4] -= 1000;
+		
+
+	// }
 
 //	UpdateBeliefsRaw[0] -= 0.25 * ComputeInnerSimilarity(Beliefs[1],Task1_velocity);
 //	UpdateBeliefsRaw[0] -= 0.25 * ComputeInnerSimilarity(Beliefs[2],Task2_velocity);
@@ -487,6 +492,9 @@ void TaskAdaptor::WinnerTakeAll()
 	}
 
 	UpdateBeliefs_[winner_index] -= UpdateSum;
+	// UpdateBeliefs_[0] = -1.0;
+	// UpdateBeliefs_[4] = -1.0;
+
 
 }
 
