@@ -44,9 +44,9 @@ void updateLinVel(const geometry_msgs::Pose::ConstPtr& msg) {
 int main(int argc, char **argv)
 {
 
-	Eigen::Vector3d task1_attractor = Eigen::Vector3d(0.6, 0, 0);
-	Eigen::Vector3d task2_attractor = Eigen::Vector3d(0.4,0.3,0);
-	Eigen::Vector3d task3_attractor = Eigen::Vector3d(0.4,0.3,-1.5); //1.0 rad = 57.2958 deg
+	Eigen::Vector3d task1_attractor = Eigen::Vector3d(0.9, 0, 0);
+	Eigen::Vector3d task2_attractor = Eigen::Vector3d(0.7,0.7,0);
+	Eigen::Vector3d task3_attractor = Eigen::Vector3d(0.7,0.7,-1.5); //1.0 rad = 57.2958 deg
 
 	// variables
 	geometry_msgs::TwistStamped Task1_velocity;

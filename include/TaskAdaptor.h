@@ -54,7 +54,7 @@ private:
 	Eigen::Vector3d robot_state_ = Eigen::Vector3d::Zero();
 	Eigen::Vector3d robot_euler_ = Eigen::Vector3d::Zero();	
 	double human_state_0_1_;
-	Eigen::Vector3d human_admittance_velocity_ = Eigen::Vector3d::Zero();
+	Eigen::VectorXd human_admittance_velocity_ = Eigen::VectorXd::Zero(6);
 	
 
 	// topic names

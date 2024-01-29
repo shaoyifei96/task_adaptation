@@ -260,28 +260,34 @@ void TaskAdaptor::PublishDesiredForce() {
 
 
 void TaskAdaptor::PublishAdaptedVelocity() {
-	Eigen::Vector3d desired_v = Eigen::Vector3d(DesiredVelocity_[0], DesiredVelocity_[1], DesiredVelocity_[2]);
-	Eigen::Vector3d human_combined_v = human_admittance_velocity_ + (1.0 - human_state_0_1_) * desired_v;
+	//first three already in world frame, next three are in robot frame
+	double desired_yaw = -atan2(robot_state_(1), robot_state_(0));
+	double desired_yaw_vel = -0.5 * (robot_euler_(1) - desired_yaw);
+	double desired_pitch_vel = -0.5 * (robot_euler_(0) - 1.57);
+	double desired_roll_vel = DesiredVelocity_[2];
+
+	Eigen::VectorXd desired_v = Eigen::VectorXd::Zero(6);
+	desired_v.segment(0, 3) = Eigen::Vector3d(DesiredVelocity_[0], DesiredVelocity_[1], -3.0 *(robot_state_(2) - 0.5));
+	desired_v.segment(3, 3) = rot_mat_ * Eigen::Vector3d(desired_yaw_vel, desired_pitch_vel, desired_roll_vel); 
+
+	Eigen::VectorXd w_human_des_ee = rot_mat_.transpose() * human_admittance_velocity_.segment(3, 3);
+	w_human_des_ee(0) = 0;
+	w_human_des_ee(1) = 0;
+
+	Eigen::VectorXd human_des_world = Eigen::VectorXd::Zero(6);
+	human_des_world.segment(0, 3) = human_admittance_velocity_.segment(0, 3);
+	human_des_world.segment(3, 3) = rot_mat_ * w_human_des_ee;
+
+	Eigen::VectorXd human_combined_v = human_des_world + (1.0 - human_state_0_1_) * desired_v;
 
 	msgAdaptedVelocity_.header.stamp = ros::Time::now();
 	msgAdaptedVelocity_.header.frame_id = "world"; // just for visualization
 	msgAdaptedVelocity_.twist.linear.x = human_combined_v[0];
 	msgAdaptedVelocity_.twist.linear.y = human_combined_v[1];
-	msgAdaptedVelocity_.twist.linear.z = -0.5 *(robot_state_(2) - 0.0);
-	// P controller \dot x = -0.5 (x - x_des)
-	double desired_yaw = -atan2(robot_state_(1), robot_state_(0));
-	double desired_yaw_vel = -0.5 * (robot_euler_(1) - desired_yaw);
-	double desired_pitch_vel = -0.5 * (robot_euler_(0) - 1.57);
-	Eigen::Vector3d w_temp = Eigen::Vector3d(desired_yaw_vel, desired_pitch_vel, human_combined_v[2]);
-	Eigen::Vector3d w_temp2 = rot_mat_ * w_temp;
-	msgAdaptedVelocity_.twist.angular.x = w_temp2(0);
-	msgAdaptedVelocity_.twist.angular.y = w_temp2(1);
-	msgAdaptedVelocity_.twist.angular.z = w_temp2(2);
-	// msgAdaptedVelocity_.linear.x = DesiredVelocity_[0];
-	// msgAdaptedVelocity_.linear.y = DesiredVelocity_[1];
-	// msgAdaptedVelocity_.linear.z = DesiredVelocity_[2];
-	
-	
+	msgAdaptedVelocity_.twist.linear.z = human_combined_v[2];
+	msgAdaptedVelocity_.twist.angular.x = human_combined_v[3];
+	msgAdaptedVelocity_.twist.angular.y = human_combined_v[4];
+	msgAdaptedVelocity_.twist.angular.z = human_combined_v[5];	
 
 	pub_adapted_velocity_.publish(msgAdaptedVelocity_);
 }
@@ -351,6 +357,9 @@ void TaskAdaptor::updateHumanV(const geometry_msgs::Twist::ConstPtr& msg){
 	human_admittance_velocity_(0) = msg->linear.x;
 	human_admittance_velocity_(1) = msg->linear.y;
 	human_admittance_velocity_(2) = msg->linear.z;
+	human_admittance_velocity_(3) = msg->angular.x;
+	human_admittance_velocity_(4) = msg->angular.y;
+	human_admittance_velocity_(5) = msg->angular.z;
 }
 
 void TaskAdaptor::updateHumanTankState(const std_msgs::Float32::ConstPtr& msg){
