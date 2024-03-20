@@ -130,10 +130,13 @@ void TaskAdaptor::InitClassVariables() {
 	// initializing the varibales
 	RealVelocity_.resize(3);
 	DesiredVelocity_.resize(3);
+	DesiredAngVelocity_.resize(3);
 	ControlWrench_.resize(6);
 
 	Task1_velocity_.resize(3);
+	Task1_ang_velocity_.resize(3);
 	Task2_velocity_.resize(3);
+	Task2_ang_velocity_.resize(3);
 	Task3_velocity_.resize(3);
 	Task4_velocity_.resize(3);
 
@@ -246,7 +249,7 @@ void TaskAdaptor::ComputeDesiredForce() {
 void TaskAdaptor::PublishDesiredForce() {
 
 	msgWrenchControl_.header.stamp = ros::Time::now();
-	msgWrenchControl_.header.frame_id = "world"; // just for visualization
+	msgWrenchControl_.header.frame_id = "/world"; // just for visualization
 	msgWrenchControl_.wrench.force.x = ControlWrench_[0];
 	msgWrenchControl_.wrench.force.y = ControlWrench_[1];
 	msgWrenchControl_.wrench.force.z = ControlWrench_[2];
@@ -261,14 +264,14 @@ void TaskAdaptor::PublishDesiredForce() {
 
 void TaskAdaptor::PublishAdaptedVelocity() {
 	//first three already in world frame, next three are in robot frame
-	double desired_yaw = -atan2(robot_state_(1), robot_state_(0));
-	double desired_yaw_vel = -0.5 * (robot_euler_(1) - desired_yaw);
-	double desired_pitch_vel = -0.5 * (robot_euler_(0) - 1.57);
-	double desired_roll_vel = DesiredVelocity_[2];
+	// double desired_yaw = -atan2(robot_state_(1), robot_state_(0));
+	// double desired_yaw_vel = -0.5 * (robot_euler_(1) - desired_yaw);
+	// double desired_pitch_vel = -0.5 * (robot_euler_(0) - 1.57);
+	// double desired_roll_vel = DesiredVelocity_[2];
 
 	Eigen::VectorXd desired_v = Eigen::VectorXd::Zero(6);
 	desired_v.segment(0, 3) = Eigen::Vector3d(DesiredVelocity_[0], DesiredVelocity_[1], -3.0 *(robot_state_(2) - 0.5));
-	desired_v.segment(3, 3) = rot_mat_ * Eigen::Vector3d(desired_yaw_vel, desired_pitch_vel, desired_roll_vel); 
+	desired_v.segment(3, 3) = Eigen::Vector3d(DesiredAngVelocity_[0], DesiredAngVelocity_[1], DesiredAngVelocity_[2]);
 
 	Eigen::VectorXd w_human_des_ee = rot_mat_.transpose() * human_admittance_velocity_.segment(3, 3);
 	w_human_des_ee(0) = 0;
@@ -281,7 +284,7 @@ void TaskAdaptor::PublishAdaptedVelocity() {
 	Eigen::VectorXd human_combined_v = human_des_world + (1.0 - human_state_0_1_) * desired_v;
 
 	msgAdaptedVelocity_.header.stamp = ros::Time::now();
-	msgAdaptedVelocity_.header.frame_id = "world"; // just for visualization
+	msgAdaptedVelocity_.header.frame_id = "/world"; // just for visualization
 	msgAdaptedVelocity_.twist.linear.x = human_combined_v[0];
 	msgAdaptedVelocity_.twist.linear.y = human_combined_v[1];
 	msgAdaptedVelocity_.twist.linear.z = human_combined_v[2];
@@ -315,6 +318,9 @@ void TaskAdaptor::UpdateTask1(const geometry_msgs::TwistStamped::ConstPtr& msg)
 	Task1_velocity_[0] = msg->twist.linear.x;
 	Task1_velocity_[1] = msg->twist.linear.y;
 	Task1_velocity_[2] = msg->twist.linear.z;
+	Task1_ang_velocity_[0] = msg->twist.angular.x;
+	Task1_ang_velocity_[1] = msg->twist.angular.y;
+	Task1_ang_velocity_[2] = msg->twist.angular.z;
 
 	flag_newdata_[1] = true;
 }
@@ -324,6 +330,9 @@ void TaskAdaptor::UpdateTask2(const geometry_msgs::TwistStamped::ConstPtr& msg)
 	Task2_velocity_[0] = msg->twist.linear.x;
 	Task2_velocity_[1] = msg->twist.linear.y;
 	Task2_velocity_[2] = msg->twist.linear.z;
+	Task2_ang_velocity_[0] = msg->twist.angular.x;
+	Task2_ang_velocity_[1] = msg->twist.angular.y;
+	Task2_ang_velocity_[2] = msg->twist.angular.z;
 
 	flag_newdata_[2] = true;
 }
@@ -394,6 +403,8 @@ void TaskAdaptor::UpdateDesiredVelocity()
 		DesiredVelocity_[dim] += Beliefs_[2] * Task2_velocity_[dim];
 		DesiredVelocity_[dim] += Beliefs_[3] * Task3_velocity_[dim];
 		DesiredVelocity_[dim] += Beliefs_[4] * Task4_velocity_[dim];
+		DesiredAngVelocity_[dim] += Beliefs_[1] * Task1_ang_velocity_[dim];
+		DesiredAngVelocity_[dim] += Beliefs_[2] * Task2_ang_velocity_[dim];
 	}
 
 }
@@ -448,6 +459,7 @@ void TaskAdaptor::RawAdaptation()
 
 	// if(Beliefs_[0] < 0.2){
 		UpdateBeliefsRaw_[0] -= 1000;
+		UpdateBeliefsRaw_[3] -= 1000;
 		UpdateBeliefsRaw_[4] -= 1000;
 		
 

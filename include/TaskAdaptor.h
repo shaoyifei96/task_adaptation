@@ -69,13 +69,16 @@ private:
 	// task adaptation variables
 	std::vector<float> RealVelocity_;
 	std::vector<float> DesiredVelocity_;
+	std::vector<float> DesiredAngVelocity_;
 	std::vector<float> ControlWrench_;
 
 	// the null primitive always commands zero velocity
 	const std::vector<float> Task0_velocity_ = {0, 0, 0};
 
 	std::vector<float> Task1_velocity_;
+	std::vector<float> Task1_ang_velocity_;
 	std::vector<float> Task2_velocity_;
+	std::vector<float> Task2_ang_velocity_;
 	std::vector<float> Task3_velocity_;
 	std::vector<float> Task4_velocity_;
 
