@@ -155,9 +155,9 @@ private:
 
 	void RawAdaptation();
 
-	float ComputeInnerSimilarity(float b, std::vector<float> RealVelocity);
+	float ComputeInnerSimilarity(float b, std::vector<float> RealVelocity, std::vector<float> task_ang_velocity = {0, 0, 0});
 
-	float ComputeOutterSimilarity(std::vector<float> RealVelocity);
+	float ComputeOutterSimilarity(std::vector<float> RealVelocity, std::vector<float> task_ang_velocity = {0, 0, 0});
 
 	void WinnerTakeAll();
 

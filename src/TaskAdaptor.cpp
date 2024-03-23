@@ -128,7 +128,7 @@ bool TaskAdaptor::InitROS() {
 void TaskAdaptor::InitClassVariables() {
 
 	// initializing the varibales
-	RealVelocity_.resize(3);
+	RealVelocity_.resize(6);
 	DesiredVelocity_.resize(3);
 	DesiredAngVelocity_.resize(3);
 	ControlWrench_.resize(6);
@@ -249,7 +249,7 @@ void TaskAdaptor::ComputeDesiredForce() {
 void TaskAdaptor::PublishDesiredForce() {
 
 	msgWrenchControl_.header.stamp = ros::Time::now();
-	msgWrenchControl_.header.frame_id = "/world"; // just for visualization
+	msgWrenchControl_.header.frame_id = "world"; // just for visualization
 	msgWrenchControl_.wrench.force.x = ControlWrench_[0];
 	msgWrenchControl_.wrench.force.y = ControlWrench_[1];
 	msgWrenchControl_.wrench.force.z = ControlWrench_[2];
@@ -284,7 +284,7 @@ void TaskAdaptor::PublishAdaptedVelocity() {
 	Eigen::VectorXd human_combined_v = human_des_world + (1.0 - human_state_0_1_) * desired_v;
 
 	msgAdaptedVelocity_.header.stamp = ros::Time::now();
-	msgAdaptedVelocity_.header.frame_id = "/world"; // just for visualization
+	msgAdaptedVelocity_.header.frame_id = "world"; // just for visualization
 	msgAdaptedVelocity_.twist.linear.x = human_combined_v[0];
 	msgAdaptedVelocity_.twist.linear.y = human_combined_v[1];
 	msgAdaptedVelocity_.twist.linear.z = human_combined_v[2];
@@ -302,6 +302,7 @@ void TaskAdaptor::updateRealVelocity(const geometry_msgs::Twist::ConstPtr& msg)
 	RealVelocity_[0] = msg->linear.x;
 	RealVelocity_[1] = msg->linear.y;
 	RealVelocity_[2] = msg->linear.z;
+
 
 	flag_newdata_[0] = true;
 
@@ -396,6 +397,7 @@ void TaskAdaptor::UpdateDesiredVelocity()
 {
 	// starting to zero
 	std::fill(DesiredVelocity_.begin(), DesiredVelocity_.end(), 0);
+	std::fill(DesiredAngVelocity_.begin(), DesiredAngVelocity_.end(), 0);
 
 	for (int dim = 0 ; dim < 3 ; dim++)
 	{
@@ -422,16 +424,16 @@ void TaskAdaptor::RawAdaptation()
 	double TempInnerSimilarity;
 
 
-	UpdateBeliefsRaw_[1] -= ComputeOutterSimilarity(Task1_velocity_);
-	TempInnerSimilarity   = 2 * ComputeInnerSimilarity(Beliefs_[1], Task1_velocity_);
+	UpdateBeliefsRaw_[1] -= ComputeOutterSimilarity(this->Task1_velocity_, this->Task1_ang_velocity_);
+	TempInnerSimilarity   = 2 * ComputeInnerSimilarity(Beliefs_[1], this->Task1_velocity_, this->Task1_ang_velocity_);
 	UpdateBeliefsRaw_[1] -= TempInnerSimilarity;
 
 	if (TempInnerSimilarity > NullinnterSimilarity) {
 		NullinnterSimilarity = TempInnerSimilarity;
 	}
 
-	UpdateBeliefsRaw_[2] -= ComputeOutterSimilarity(Task2_velocity_);
-	TempInnerSimilarity = 2 * ComputeInnerSimilarity(Beliefs_[2], Task2_velocity_);
+	UpdateBeliefsRaw_[2] -= ComputeOutterSimilarity(this->Task2_velocity_, this->Task2_ang_velocity_);
+	TempInnerSimilarity = 2 * ComputeInnerSimilarity(Beliefs_[2], this->Task2_velocity_, this->Task2_ang_velocity_);
 	UpdateBeliefsRaw_[2] -= TempInnerSimilarity;
 
 	if (TempInnerSimilarity > NullinnterSimilarity) {
@@ -541,33 +543,43 @@ void TaskAdaptor::WinnerTakeAll()
 }
 
 
-float TaskAdaptor::ComputeInnerSimilarity(float b, std::vector<float> task_velocity) {
+float TaskAdaptor::ComputeInnerSimilarity(float b, std::vector<float> task_velocity, std::vector<float> task_ang_velocity ) {
 
 	std::vector<float> OtherTasks;
-	OtherTasks.resize(3);
+	OtherTasks.resize(6);
 
 	OtherTasks[0] = DesiredVelocity_[0] - b * task_velocity[0];
 	OtherTasks[1] = DesiredVelocity_[1] - b * task_velocity[1];
 	OtherTasks[2] = DesiredVelocity_[2] - b * task_velocity[2];
+	OtherTasks[3] = DesiredAngVelocity_[0] - b * task_ang_velocity[0];
+	OtherTasks[4] = DesiredAngVelocity_[1] - b * task_ang_velocity[1];
+	OtherTasks[5] = DesiredAngVelocity_[2] - b * task_ang_velocity[2];
 
 	float innerSimilarity = 0;
 
 	innerSimilarity += OtherTasks[0] * task_velocity[0];
 	innerSimilarity += OtherTasks[1] * task_velocity[1];
 	innerSimilarity += OtherTasks[2] * task_velocity[2];
+	innerSimilarity += OtherTasks[3] * task_ang_velocity[0];
+	innerSimilarity += OtherTasks[4] * task_ang_velocity[1];
+	innerSimilarity += OtherTasks[5] * task_ang_velocity[2];
 
 	return innerSimilarity;
 
 }
 
 
-float TaskAdaptor::ComputeOutterSimilarity(std::vector<float> task_velocity) {
+float TaskAdaptor::ComputeOutterSimilarity(std::vector<float> task_velocity, std::vector<float> task_ang_velocity ) {
 
 	float outterSimiliary = 0;
 
 	outterSimiliary += (RealVelocity_[0] - task_velocity[0]) * (RealVelocity_[0] - task_velocity[0]);
 	outterSimiliary += (RealVelocity_[1] - task_velocity[1]) * (RealVelocity_[1] - task_velocity[1]);
 	outterSimiliary += (RealVelocity_[2] - task_velocity[2]) * (RealVelocity_[2] - task_velocity[2]);
+	outterSimiliary += (RealVelocity_[3] - task_ang_velocity[0]) * (RealVelocity_[3] - task_ang_velocity[0]);
+	outterSimiliary += (RealVelocity_[4] - task_ang_velocity[1]) * (RealVelocity_[4] - task_ang_velocity[1]);
+	outterSimiliary += (RealVelocity_[5] - task_ang_velocity[2]) * (RealVelocity_[5] - task_ang_velocity[2]);
+
 
 	return outterSimiliary;
 }
