@@ -273,15 +273,15 @@ void TaskAdaptor::PublishAdaptedVelocity() {
 	desired_v.segment(0, 3) = Eigen::Vector3d(DesiredVelocity_[0], DesiredVelocity_[1], -3.0 *(robot_state_(2) - 0.5));
 	desired_v.segment(3, 3) = Eigen::Vector3d(DesiredAngVelocity_[0], DesiredAngVelocity_[1], DesiredAngVelocity_[2]);
 
-	Eigen::VectorXd w_human_des_ee = rot_mat_.transpose() * human_admittance_velocity_.segment(3, 3);
-	w_human_des_ee(0) = 0;
-	w_human_des_ee(1) = 0;
+	// Eigen::VectorXd w_human_des_ee = rot_mat_.transpose() * human_admittance_velocity_.segment(3, 3);
+	// w_human_des_ee(0) = 0;
+	// w_human_des_ee(1) = 0;
 
-	Eigen::VectorXd human_des_world = Eigen::VectorXd::Zero(6);
-	human_des_world.segment(0, 3) = human_admittance_velocity_.segment(0, 3);
-	human_des_world.segment(3, 3) = rot_mat_ * w_human_des_ee;
+	// Eigen::VectorXd human_des_world = Eigen::VectorXd::Zero(6);
+	// human_des_world.segment(0, 3) = human_admittance_velocity_.segment(0, 3);
+	// human_des_world.segment(3, 3) = rot_mat_ * w_human_des_ee;
 
-	Eigen::VectorXd human_combined_v = human_des_world + (1.0 - human_state_0_1_) * desired_v;
+	Eigen::VectorXd human_combined_v = human_admittance_velocity_ + (1.0 - human_state_0_1_) * desired_v;
 
 	msgAdaptedVelocity_.header.stamp = ros::Time::now();
 	msgAdaptedVelocity_.header.frame_id = "world"; // just for visualization
@@ -424,16 +424,16 @@ void TaskAdaptor::RawAdaptation()
 	double TempInnerSimilarity;
 
 
-	UpdateBeliefsRaw_[1] -= ComputeOutterSimilarity(this->Task1_velocity_, this->Task1_ang_velocity_);
-	TempInnerSimilarity   = 2 * ComputeInnerSimilarity(Beliefs_[1], this->Task1_velocity_, this->Task1_ang_velocity_);
+	UpdateBeliefsRaw_[1] -= this->ComputeOutterSimilarity(this->Task1_velocity_, this->Task1_ang_velocity_);
+	TempInnerSimilarity   = 2 * this->ComputeInnerSimilarity(Beliefs_[1], this->Task1_velocity_, this->Task1_ang_velocity_);
 	UpdateBeliefsRaw_[1] -= TempInnerSimilarity;
 
 	if (TempInnerSimilarity > NullinnterSimilarity) {
 		NullinnterSimilarity = TempInnerSimilarity;
 	}
 
-	UpdateBeliefsRaw_[2] -= ComputeOutterSimilarity(this->Task2_velocity_, this->Task2_ang_velocity_);
-	TempInnerSimilarity = 2 * ComputeInnerSimilarity(Beliefs_[2], this->Task2_velocity_, this->Task2_ang_velocity_);
+	UpdateBeliefsRaw_[2] -= this->ComputeOutterSimilarity(this->Task2_velocity_, this->Task2_ang_velocity_);
+	TempInnerSimilarity = 2 * this->ComputeInnerSimilarity(Beliefs_[2], this->Task2_velocity_, this->Task2_ang_velocity_);
 	UpdateBeliefsRaw_[2] -= TempInnerSimilarity;
 
 	if (TempInnerSimilarity > NullinnterSimilarity) {

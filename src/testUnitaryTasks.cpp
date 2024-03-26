@@ -34,16 +34,17 @@ Eigen::Vector3d getTaskVelocity(const Eigen::VectorXd& current_position, const E
 void updateTaskState(const geometry_msgs::Pose::ConstPtr& msg) {
 	Eigen::Quaterniond q(msg->orientation.w, msg->orientation.x, msg->orientation.y, msg->orientation.z);
 	orientation = q;
-	auto euler = q.toRotationMatrix().eulerAngles(1, 0, 2); // pitch yaw roll
+	// auto euler = q.toRotationMatrix().eulerAngles(1, 0, 2); // pitch yaw roll 
+	// THIS LINE HAS PROBLEM !!!! when yaw over 90 deg it flips!!!!!!!!!!!
 	//ros info stream throttle
 	// ROS_INFO_STREAM_THROTTLE(1, "euler: " << euler(0) << ", " << euler(1) << ", " << euler(2));
 	
 	robot_state(0) = msg->position.x;
 	robot_state(1) = msg->position.y;
 	robot_state(2) = msg->position.z;
-	robot_state(3) = euler(0);
-	robot_state(4) = euler(1);
-	robot_state(5) = euler(2);
+	robot_state(3) = 0.0;//euler(0);
+	robot_state(4) = 0.0;//euler(1);
+	robot_state(5) = 0.0;//euler(2);
 
 }
 void updateGoal(const visualization_msgs::MarkerArray::ConstPtr& msg) {
@@ -62,6 +63,9 @@ Eigen::Vector3d getTaskVelocity_Ang(const Eigen::VectorXd & attractor, const Eig
 	orientation_des_local = q_pitch * q_yaw * q_roll; //q_roll * q_yaw * q_pitch;
 	// ee_des_quat << _robot.ee_des_quat[1], _robot.ee_des_quat[2], _robot.ee_des_quat[3], _robot.ee_des_quat[0];
 
+	if (orientation_des_local.coeffs().dot(orientation.coeffs()) < 0.0) {
+    	orientation.coeffs() << -orientation.coeffs();
+  	}
 
 	// Eigen::Quaterniond orientation_des(ee_des_quat);
 	double s1 = orientation.w();
@@ -138,6 +142,7 @@ int main(int argc, char **argv)
 	// self.robot_vel_sub = rospy.Subscriber("/iiwa/ee_vel_cartimp", Pose, self.robot_vel_callback, tcp_nodelay=True)
 	ros::Publisher pub_realVel = n.advertise<geometry_msgs::Twist>("/testUnitary/real_velocity", 1000);
 	ros::Publisher pub_quat_tracked = n.advertise<geometry_msgs::PoseStamped>("/testUnitary/quat_tracked", 1000);
+	// ros::Publisher pub_robot_orientation_eulers = n.advertise<geometry_msgs::Point>("/testUnitary/robot_orientation_eulers", 1000);
 
 	ros::Rate loop_rate(1000);
 
@@ -150,10 +155,15 @@ int main(int argc, char **argv)
 
 	Eigen::Vector3d v_temp = Eigen::Vector3d(0,0,0);
 	Eigen::Vector3d A_mat_lin = Eigen::Vector3d(-0.7,-0.7,-2.0);
-	Eigen::Matrix3d Actual_A_mat = Eigen::Matrix3d::Identity()*-0.7;
+	Eigen::Matrix3d Actual_A_mat = Eigen::Matrix3d::Identity()*-1.4;
 	Eigen::Vector3d w_temp = Eigen::Vector3d(0,0,0);
 	while (ros::ok())
 	{
+		// geometry_msgs::Point euler_msg;
+		// euler_msg.x = robot_state(3);
+		// euler_msg.y = robot_state(4);
+		// euler_msg.z = robot_state(5);
+		// pub_robot_orientation_eulers.publish(euler_msg);
 		// task2_attractor = Eigen::Vector3d(robot_goal[0], robot_goal[1], robot_goal[2]);
 		// task3_attractor = Eigen::Vector3d(0.8, 0, 0.0); //trash !!!!
 
