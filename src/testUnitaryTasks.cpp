@@ -109,9 +109,9 @@ int main(int argc, char **argv)
 	task1_attractor << 0.80, 0.0, 0.3, 0.0, 0.0, 0.0;
 	Eigen::VectorXd task2_attractor(6);
 	task2_attractor << robot_goal[0], robot_goal[1], 0.3, 0.0,0.0, robot_goal[2];
-	Eigen::VectorXd task3_attractor(6);
-	task3_attractor << robot_goal[0], robot_goal[1], 0.3, 0.0,0.0, 0.0;
-
+	// Eigen::VectorXd task3_attractor(6);
+	// task3_attractor << robot_goal[0], robot_goal[1], 0.3, 0.0,0.0, 0.0;
+	// std::cout << "task2_attractor: " << task2_attractor << std::endl;
 	// variables
 	geometry_msgs::TwistStamped Task1_velocity;
 	geometry_msgs::TwistStamped Task2_velocity;
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 		// euler_msg.y = robot_state(4);
 		// euler_msg.z = robot_state(5);
 		// pub_robot_orientation_eulers.publish(euler_msg);
-		// task2_attractor = Eigen::Vector3d(robot_goal[0], robot_goal[1], robot_goal[2]);
+		task2_attractor << robot_goal[0], robot_goal[1], 0.3, 0.0,0.0, robot_goal[2];
 		// task3_attractor = Eigen::Vector3d(0.8, 0, 0.0); //trash !!!!
 
 		ros::Time time_now = ros::Time::now();
@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 		//NOT ACTIVATED
 		Task3_velocity.header.stamp = time_now;
 		Task3_velocity.header.frame_id = "world";
-		v_temp = getTaskVelocity(robot_state, task3_attractor, A_mat_lin);
+		v_temp = getTaskVelocity(robot_state, task1_attractor, A_mat_lin);
 		Task3_velocity.twist.linear.x = v_temp(0);
 		Task3_velocity.twist.linear.y = v_temp(1);
 		Task3_velocity.twist.linear.z = v_temp(2);
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 
 		Task4_velocity.header.stamp = time_now;
 		Task4_velocity.header.frame_id = "world";
-		v_temp = getTaskVelocity(robot_state, task3_attractor, A_mat_lin);
+		v_temp = getTaskVelocity(robot_state, task1_attractor, A_mat_lin);
 		Task4_velocity.twist.linear.x = v_temp(0);
 		Task4_velocity.twist.linear.y = v_temp(1);
 		Task4_velocity.twist.linear.z = v_temp(2);
